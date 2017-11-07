@@ -1,4 +1,4 @@
 package wjaronski.controller;
 
-public class Controller {
+public class LoginController {
 }

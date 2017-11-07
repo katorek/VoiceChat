@@ -20,6 +20,7 @@ Run 'make' to compile
 #define SERVER_PORT 1234
 #define QUEUE_SIZE 5
 #define MAX_CONNECTIONS 5
+#define MAX_MESSAGE_LENGTH 100
 
 //struktura zawierajÄca dane, ktĂłre zostanÄ przekazane do wÄtku
 struct thread_data_t
@@ -55,6 +56,22 @@ void usunIdZListy(int id){
     pthread_mutex_unlock(&lista_mutex);
 }    
 
+void wyslijDoListyBezeMnie(int socket, char message[]){
+    if(message[0]!='0'){
+        pthread_mutex_lock(&lista_mutex);
+        int i;
+        for(i=0;i<MAX_CONNECTIONS;++i){
+            printf("%d\t",descs[i]);
+            if(descs[i]!=0 && descs[i]!=socket){
+//                printf("sendingTo: %d",descs[i]);
+                write(descs[i], message,MAX_MESSAGE_LENGTH);
+            }
+        }
+        printf("\n");
+        pthread_mutex_unlock(&lista_mutex);
+    }
+}
+
 void wyslijDoListy(char messsage[]){
     if(messsage[0]!='0'){
         pthread_mutex_lock(&lista_mutex);
@@ -62,7 +79,7 @@ void wyslijDoListy(char messsage[]){
         for(i=0;i<MAX_CONNECTIONS;++i){
             printf("%d\t",descs[i]);
             if(descs[i]!=0){
-                write(descs[i],messsage,100);
+                write(descs[i],messsage,MAX_MESSAGE_LENGTH);
             }
         }    
         printf("\n");
@@ -84,7 +101,9 @@ void *ThreadBehavior(void *t_data)
     printf("New connection on:%d\n",conn_sck);
     while((readC = read(conn_sck, bufor, 100))>0){
         sprintf(bufor,"%s",bufor);
-        wyslijDoListy(bufor);
+//        printf("MSG: %s from %d",bufor, conn_sck);
+        wyslijDoListyBezeMnie(conn_sck, bufor);
+        memset(bufor, 0, 100);
     }
     
     printf("Connection closed on:%d\n",conn_sck); 

@@ -38,21 +38,32 @@ public class SocketConnection {
         }
     }
 
-    private static void wyslij(String msg) {
-        out.println(msg);
-    }
 
     private static void czytajZKlawaituryIWyslij() {
         String msg;
         boolean running = true;
         while (running && klawa.hasNext()) {
             msg = klawa.nextLine();
-            if (msg.charAt(0) == '0') {
-                msg = "0";
-                running = false;
+            if (!isEmptyMessage(msg)) {
+                if (isEndMessage(msg)) {
+                    msg = "0";
+                    running = false;
+                }
+                wyslij(msg);
             }
-            wyslij(msg);
         }
+    }
+
+    private static boolean isEmptyMessage(String msg) {
+        return msg == null || msg.length() == 0;
+    }
+
+    private static boolean isEndMessage(String msg) {
+        return msg.charAt(0) == '0';
+    }
+
+    private static void wyslij(String msg) {
+        out.println(msg);
     }
 
     private static String czytaj() {
