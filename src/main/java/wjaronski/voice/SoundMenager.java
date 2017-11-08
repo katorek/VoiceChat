@@ -74,6 +74,17 @@ public class SoundMenager {
 
     }
 
+    private AudioFormat getAudioFormat() {
+        float sampleRate = 8000.0F;
+        int sampleSizeInBits = 8;
+        int channels = 1;
+        boolean signed = true;
+        boolean bigEndian = false;
+
+        return new AudioFormat(sampleRate, sampleSizeInBits, channels, signed,
+                bigEndian);
+    }
+
     public void startRecording() {
         byte buffer[] = new byte[BUFF_SIZE];
         isRecording = true;
@@ -127,21 +138,31 @@ public class SoundMenager {
         sourceDataLine.close();
     }
 
-    private AudioFormat getAudioFormat() {
-        float sampleRate = 8000.0F;
-        int sampleSizeInBits = 8;
-        int channels = 1;
-        boolean signed = true;
-        boolean bigEndian = false;
+    /**
+     * Aby dostac mixer wspierajace wysylanie dzwieku to wykonac
+     * wywolac isLineSupported(mixer) na SoundManagerze
+     * @return list of Mixers
+     */
+    public Mixer.Info[] getMixers(){
+        audioFormat = getAudioFormat();
 
-        return new AudioFormat(sampleRate, sampleSizeInBits, channels, signed,
-                bigEndian);
+        DataLine.Info dataLineInfo = new DataLine.Info(
+                TargetDataLine.class, audioFormat);
+
+        Mixer.Info[] mixerInfo = AudioSystem.getMixerInfo();
+        return AudioSystem.getMixerInfo();
+    }
+
+    public boolean isLineSupported(Mixer mixer){
+        DataLine.Info dataLineInfo = new DataLine.Info(
+                TargetDataLine.class, audioFormat);
+        return mixer.isLineSupported(dataLineInfo);
     }
 
     public static void main(String[] args) {
 
         try {
-            Socket socket = new Socket("192.168.1.14", 1234);
+            Socket socket = new Socket("192.168.1.18", 12345);
             Mixer mixer = AudioSystem.getMixer(AudioSystem.getMixerInfo()[3]);
 
             SoundMenager sm = new SoundMenager(socket,mixer);

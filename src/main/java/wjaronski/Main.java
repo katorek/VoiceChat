@@ -2,7 +2,6 @@ package wjaronski;
 
 import javafx.application.Application;
 import javafx.stage.Stage;
-import wjaronski.voice.Speaker;
 
 public class Main extends Application {
 
