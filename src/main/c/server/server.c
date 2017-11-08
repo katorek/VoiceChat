@@ -70,6 +70,21 @@ void wyslijDoListy(char messsage[]){
     }
 }
 
+void wyslijDoPozostalych(int socket,char messsage[]){
+    if(messsage[0]!='0'){
+        pthread_mutex_lock(&lista_mutex);
+        int i;
+        for(i=0;i<MAX_CONNECTIONS;++i){
+            //printf("%d\t",descs[i]);
+            if(descs[i]!=0 && descs[i]!=socket){
+                write(descs[i],messsage,100);
+            }
+        }
+        //printf("\n");
+        pthread_mutex_unlock(&lista_mutex);
+    }
+}
+
 //funkcja opisujÄcÄ zachowanie wÄtku - musi przyjmowaÄ argument typu (void *) i zwracaÄ (void *)
 void *ThreadBehavior(void *t_data)
 {
@@ -84,7 +99,7 @@ void *ThreadBehavior(void *t_data)
     printf("New connection on:%d\n",conn_sck);
     while((readC = read(conn_sck, bufor, 100))>0){
         sprintf(bufor,"%s",bufor);
-        wyslijDoListy(bufor);
+        wyslijDoPozostalych(conn_sck,bufor);
     }
     
     printf("Connection closed on:%d\n",conn_sck); 
