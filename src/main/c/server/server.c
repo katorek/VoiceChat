@@ -20,6 +20,16 @@ Run 'make' to compile
 #define SERVER_PORT 12345
 #define QUEUE_SIZE 5
 #define MAX_CONNECTIONS 5
+#define MAX_USERS 10
+
+struct users_arr
+{
+    char *username;
+    char *password;
+};
+
+int userCount = 0;
+struct users_arr users[MAX_USERS];
 
 //struktura zawierajÄca dane, ktĂłre zostanÄ przekazane do wÄtku
 struct thread_data_t
@@ -27,9 +37,14 @@ struct thread_data_t
     int conn_sck_desc;
 };
 
+
+
 int descs[MAX_CONNECTIONS];
 pthread_mutex_t lista_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+void addUser(char *username, char *password){
+
+}
 
 void dodajIdDoListy(int id){
     int i;
@@ -85,7 +100,7 @@ void wyslijDoPozostalych(int socket,char messsage[]){
     }
 }
 
-//funkcja opisujÄcÄ zachowanie wÄtku - musi przyjmowaÄ argument typu (void *) i zwracaÄ (void *)
+
 void *ThreadBehavior(void *t_data)
 {
     pthread_detach(pthread_self());
@@ -97,6 +112,43 @@ void *ThreadBehavior(void *t_data)
     int conn_sck = (*th_data).conn_sck_desc;
     
     printf("New connection on:%d\n",conn_sck);
+    //logowanie, username;password
+    readC = read(conn_sck,bufor,100);
+    sprintf(bufor,"%s",bufor);
+    printf("%s\n",bufor);
+    char *user = (char *)malloc(strlen(bufor)+1);
+    char *pass = (char *)malloc(strlen(bufor)+1);
+//    printf("%s",bufor);
+
+    int i = 0;
+    while(bufor[i]!=';')++i;
+    strncpy(user,bufor,i);
+    i++;
+
+    int j=0;
+    while(bufor[j]!=';')++j;
+    strncpy(pass,bufor+i,j);
+
+
+
+//    char *usernameTemp = "";
+//    char *passwordTemp = "";
+//    for(i=0;i<50;++i) usernameTemp = usernameTemp + bufor[i];
+//    for(i=50;i<100;++i) passwordTemp = passwordTemp + bufor[i];
+    printf("Sending back: %s;%s\n",user,pass);
+    memset(bufor,0,100);
+    bufor[0]='2';
+    bufor[1]='\n';
+
+    sprintf(bufor,"%s",bufor);
+    printf("%s\n",bufor);
+//    printf("%s,%s\n",usernameTemp,passwordTemp);
+    write(conn_sck,bufor,100);
+    write(conn_sck,bufor,100);
+    write(conn_sck,bufor,100);
+
+    printf("Listening\n");
+    //komunikacja z innymi
     while((readC = read(conn_sck, bufor, 100))>0){
         sprintf(bufor,"%s",bufor);
         wyslijDoPozostalych(conn_sck,bufor);

@@ -1,5 +1,7 @@
 package wjaronski.socket;
 
+import wjaronski.exception.LogowanieNieudaneException;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -14,25 +16,30 @@ public class SocketConnection {
     private static Scanner klawa;
     private static PrintWriter out;
     private static BufferedReader in;
+//    private BufferedInputStream in;
+//    private BufferedOutputStream out;
+
+    private boolean logged = false;
 
     public SocketConnection(String ip, String port){
         System.err.println(ip+":"+port);
         init(ip,port);
     }
 
-    private static void init(String ip, String port) {
+    private void init(String ip, String port) {
         try {
             cSocket = new Socket(ip, Integer.parseInt(port));
+//            out = new BufferedOutputStream(cSocket.getOutputStream());
+//            in = new BufferedInputStream(cSocket.getInputStream());
             out = new PrintWriter(cSocket.getOutputStream(), true);
             klawa = new Scanner(System.in);
-            in = new BufferedReader(
-                    new InputStreamReader(cSocket.getInputStream()));
+            in = new BufferedReader(new InputStreamReader(cSocket.getInputStream()));
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private static void cleanUp() {
+    private void cleanUp() {
         try {
             cSocket.close();
             out.close();
@@ -43,11 +50,11 @@ public class SocketConnection {
         }
     }
 
-    private static void wyslij(String msg) {
+    private void wyslij(String msg) {
         out.println(msg);
     }
 
-    private static void czytajZKlawaituryIWyslij() {
+    private void czytajZKlawaituryIWyslij() {
         String msg;
         boolean running = true;
         while (running && klawa.hasNext()) {
@@ -60,17 +67,18 @@ public class SocketConnection {
         }
     }
 
-    private static String czytaj() {
+    private String czytaj() {
         String line = "";
         try {
             line = in.readLine();
+            System.err.println(line);
         } catch (IOException e) {
             System.err.println("ERR " + line);
         }
         return line;
     }
 
-    private static void utworzWatekCzytajacy() {
+    public void utworzWatekNasluchujacy() {
         new Thread(() -> {
             boolean running = true;
             String serverMsg;
@@ -87,17 +95,40 @@ public class SocketConnection {
     }
 
     public void establishConnection(){
-        utworzWatekCzytajacy();
-        czytajZKlawaituryIWyslij();
-        cleanUp();
+//        utworzWatekNasluchujacy();
+//        czytajZKlawaituryIWyslij();
+//        cleanUp();
     }
 
     public static void main(String[] args) {
         SocketConnection sc = new SocketConnection("127.0.0.1","12345");
         sc.establishConnection();
 //        init();
-//        utworzWatekCzytajacy();
+//        utworzWatekNasluchujacy();
 //        czytajZKlawaituryIWyslij();
 //        cleanUp();
+    }
+
+    public void send(String s) {
+        wyslij(s);
+    }
+
+    public void loginResponse() throws LogowanieNieudaneException{
+        String line = czytaj();
+        System.out.println(line);
+        //1 - accepted, 2-rejected
+        if(line.charAt(0)=='2') {
+            System.err.println("THROWNIG");
+            throw new LogowanieNieudaneException("Nie udane logowanie");
+        }
+        if(line.charAt(0)=='1')logged = true;
+    }
+
+    public boolean loggedProperly() {
+        return logged;
+    }
+
+    public Socket getSocket() {
+        return cSocket;
     }
 }

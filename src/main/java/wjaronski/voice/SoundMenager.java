@@ -37,6 +37,10 @@ public class SoundMenager {
         setUpOutput();
     }
 
+    public SoundMenager(Socket socket) {
+        this(socket,AudioSystem.getMixer(AudioSystem.getMixerInfo()[3]));
+    }
+
     private void setUpSocket(Socket socket) {
         try {
             this.sock = socket;
