@@ -162,7 +162,7 @@ public class SoundMenager {
     public static void main(String[] args) {
 
         try {
-            Socket socket = new Socket("192.168.1.18", 12345);
+            Socket socket = new Socket("127.0.0.1", 12345);
             Mixer mixer = AudioSystem.getMixer(AudioSystem.getMixerInfo()[3]);
 
             SoundMenager sm = new SoundMenager(socket,mixer);

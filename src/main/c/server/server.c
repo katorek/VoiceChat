@@ -17,7 +17,7 @@ Run 'make' to compile
 #include <time.h>
 #include <pthread.h>
 //lab_sec_1
-#define SERVER_PORT 1234
+#define SERVER_PORT 12345
 #define QUEUE_SIZE 5
 #define MAX_CONNECTIONS 5
 

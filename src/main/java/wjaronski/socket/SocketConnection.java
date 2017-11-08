@@ -15,9 +15,14 @@ public class SocketConnection {
     private static PrintWriter out;
     private static BufferedReader in;
 
-    private static void init() {
+    public SocketConnection(String ip, String port){
+        System.err.println(ip+":"+port);
+        init(ip,port);
+    }
+
+    private static void init(String ip, String port) {
         try {
-            cSocket = new Socket("127.0.0.1", 1234);
+            cSocket = new Socket(ip, Integer.parseInt(port));
             out = new PrintWriter(cSocket.getOutputStream(), true);
             klawa = new Scanner(System.in);
             in = new BufferedReader(
@@ -81,10 +86,18 @@ public class SocketConnection {
         }).start();
     }
 
-    public static void main(String[] args) {
-        init();
+    public void establishConnection(){
         utworzWatekCzytajacy();
         czytajZKlawaituryIWyslij();
         cleanUp();
+    }
+
+    public static void main(String[] args) {
+        SocketConnection sc = new SocketConnection("127.0.0.1","12345");
+        sc.establishConnection();
+//        init();
+//        utworzWatekCzytajacy();
+//        czytajZKlawaituryIWyslij();
+//        cleanUp();
     }
 }
