@@ -137,7 +137,7 @@ void *ThreadBehavior(void *t_data)
 //    for(i=50;i<100;++i) passwordTemp = passwordTemp + bufor[i];
     printf("Sending back: %s;%s\n",user,pass);
     memset(bufor,0,100);
-    bufor[0]='2';
+    bufor[0]='1';
     bufor[1]='\n';
 
     sprintf(bufor,"%s",bufor);
