@@ -37,13 +37,37 @@ struct thread_data_t
     int conn_sck_desc;
 };
 
-
-
 int descs[MAX_CONNECTIONS];
 pthread_mutex_t lista_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void addUser(char *username, char *password){
+    users[userCount].username=username;
+    users[userCount].password=password;
 
+//    strcpy(users[userCount].username,username);
+//    strcpy(users[userCount].password,password);
+    printf("New user:%s, p:%s\n",users[userCount].username,users[userCount].password);
+    ++userCount;
+}
+
+int userExists(char *user){
+   int i;
+   for(i=0;i<userCount;++i){
+        if(*users[i].username==*user && strlen(users[i].username)==strlen(user)) return 1;
+   }
+   return 0;
+}
+
+int logUser(char *user, char *pass){
+    int i;
+    for(i=0;i<userCount;++i){
+//        printf("COMPARING\n%s %s\n%s %s\n",user,pass,users[i].username,users[i].password);
+        if(*users[i].username==*user &&
+        *users[i].password==*pass
+        &&(strlen(users[i].username)==strlen(user))
+        &&(strlen(users[i].password)==strlen(pass))) return 1;
+    }
+    return 0;
 }
 
 void dodajIdDoListy(int id){
@@ -117,34 +141,59 @@ void *ThreadBehavior(void *t_data)
     char *user = (char *)malloc(strlen(bufor)+1);
     char *pass = (char *)malloc(strlen(bufor)+1);
 
-    int i = 0;
+    char choice = bufor[0];
+    printf("c:%c\n",choice);
+
+    int i = 1;
     while(bufor[i]!=';')++i;
-    strncpy(user,bufor,i);
+    strncpy(user,bufor+1,i-1);
     i++;
 
     int j=0;
-    while(bufor[j]!=';')++j;
+    while(bufor[j+i]!=';')++j;
     strncpy(pass,bufor+i,j);
+    int loggedProperly = 1;
 
-
-    printf("User: %s logged in.\n",user);
     memset(bufor,0,100);
-    bufor[0]='1';
+    //5 new user
+    if(choice=='5') {
+        if(userExists(user)==1){//exists
+            printf("User exists!\n");
+            bufor[1]='2';
+            loggedProperly=0;
+        }else{
+            bufor[0]='1';
+            addUser(user,pass);
+//            logUser(user,pass);
+        }
+    }
+    if(choice=='4'){
+        printf("4: ");
+        if(logUser(user,pass)==1){
+            bufor[0]='1';
+            printf("login success\n");//dobre logowanie
+        }
+        else{
+            loggedProperly=0;
+            bufor[0]='2';
+            printf("login failed\n");//zle logowanie
+        }
+    }
+
+//    printf("User: %s logged in.\n",user);
     bufor[1]='\n';
 
     sprintf(bufor,"%s",bufor);
-//    printf("%s\n",bufor);
-//    printf("%s,%s\n",usernameTemp,passwordTemp);
     write(conn_sck,bufor,100);
-//    write(conn_sck,bufor,100);
-//    write(conn_sck,bufor,100);
 
-    //komunikacja z innymi
-    while((readC = read(conn_sck, bufor, 100))>0){
-        sprintf(bufor,"%s",bufor);
-        wyslijDoPozostalych(conn_sck,bufor);
+    if(loggedProperly == 1){
+        while((readC = read(conn_sck, bufor, 100))>0){
+            sprintf(bufor,"%s",bufor);
+    //        printf("%s\n",bufor);
+            wyslijDoPozostalych(conn_sck,bufor);
+        }
     }
-    
+
     printf("Connection closed on:%d\n",conn_sck); 
     bufor[0]= '0';
     write(conn_sck, bufor,100);
@@ -171,6 +220,8 @@ void handleConnection(int connection_socket_descriptor) {
 
 int main(int argc, char* argv[])
 {
+    addUser("wojtek","12345");
+    addUser("guest","123");
     printf("Running Voice Chat Server V1.0 by Kator\n");
     int tempI=0;
     for(tempI=0;tempI < MAX_CONNECTIONS; ++tempI){

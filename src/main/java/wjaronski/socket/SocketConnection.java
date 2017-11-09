@@ -30,8 +30,6 @@ public class SocketConnection {
     private void init(String ip, String port) {
         try {
             cSocket = new Socket(ip, Integer.parseInt(port));
-//            out = new BufferedOutputStream(cSocket.getOutputStream());
-//            in = new BufferedInputStream(cSocket.getInputStream());
             out = new PrintWriter(cSocket.getOutputStream(), true);
             klawa = new Scanner(System.in);
             in = new BufferedReader(new InputStreamReader(cSocket.getInputStream()));
@@ -72,7 +70,6 @@ public class SocketConnection {
         String line = "";
         try {
             line = in.readLine();
-            System.err.println(line);
         } catch (IOException e) {
             System.err.println("ERR " + line);
         }
@@ -87,7 +84,6 @@ public class SocketConnection {
             while (running) {
                 serverMsg = czytaj();
                 if (serverMsg.equals(ENDING_MSG) || serverMsg.length() == 0) {
-                    System.out.println("Ending");
                     running = false;
                 }
                 System.out.print((serverMsg.length() > 0) ? serverMsg + "\n" : "");

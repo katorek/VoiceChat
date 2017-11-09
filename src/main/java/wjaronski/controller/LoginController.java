@@ -9,27 +9,29 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import wjaronski.Main;
 import wjaronski.exception.LogowanieNieudaneException;
 import wjaronski.exception.LogowanieUdaneException;
 import wjaronski.socket.SocketConnection;
 import wjaronski.voice.SoundMenager;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.*;
+import java.net.InetAddress;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.ResourceBundle;
 
 public class LoginController implements Initializable {
+    private static String NEW_USER_PREFIX = "5";
+    private static String USER_LOGIN_PREFIX = "4";
     private static String FILE_SEPARATOR = ";";
     private static String username, password, ip, port;
-    private SocketConnection sc;
+    private static SocketConnection sc;
+    private static boolean loggedProperly = false;
+
     private boolean waitingForLogResponse = false;
 
-    private SoundMenager soundMenager;
-
+    private static SoundMenager soundMenager;
 
     @FXML
     private TextField ipTextField;
@@ -54,57 +56,77 @@ public class LoginController implements Initializable {
 
     @FXML
     private void logUser() {
-        username = usernameTextField.getText();
-        password = passwordField.getText();
-        ip = ipTextField.getText();
-        port = portTextField.getText();
-//        statusLabel.setText("u:" + username +
-//                ", p:" + password +
-//                ", ip:" + ip + ":" + port);
-        if (sc == null) {
-            sc = new SocketConnection(ip, port);
-        }
-        System.out.println("Trying to send login");
+        updateFields();
+        newSocketConnection();
+        createResopnseThread(false);
+        sendLoginDetails();
 
+    }
+
+    private void sendLoginDetails() {
+        sc.send(USER_LOGIN_PREFIX + username + ";" + password + ";");
+    }
+
+    private void createResopnseThread(boolean newUser) {
         if (!waitingForLogResponse) {
             waitingForLogResponse = true;
             new Thread(() -> {
                 if (!sc.loggedProperly()) {
                     try {
-                        System.out.println("Waiting for response");
                         sc.loginResponse();
                     } catch (LogowanieNieudaneException e) {
-                        waitingForLogResponse = false;
-                        Platform.runLater(() -> {
-                            statusLabel.setTextFill(Color.RED);
-                            statusLabel.setText("Nieudane logowanie");
-                        });
+                        logowanieNieudane(newUser);
                     } catch (LogowanieUdaneException e) {
-                        waitingForLogResponse = true;
-                        Platform.runLater(() -> {
-                            Stage stage = (Stage) loginButton.getScene().getWindow();
-                            stage.close();
-                        });
-                        //otworzyc main window
+                        logowanieUdane();
                     }
                 }
-
-//                Platform.runLater(() -> statusLabel.setText(""));
             }).start();
+            waitingForLogResponse = false;
         }
-        sc.send(username + ";" + password + ";");
-//        if (sc.loggedProperly()) {
-//            System.out.println("SOUND STARTING");
-//            soundMenager = new SoundMenager(sc.getSocket());
-//            soundMenager.startPlaying();
-//            soundMenager.startRecording();
-//
-//        }
+    }
+
+    private void logowanieUdane() {
+        loggedProperly = true;
+        waitingForLogResponse = true;
+        Platform.runLater(() -> {
+            Stage stage = (Stage) loginButton.getScene().getWindow();
+            stage.close();
+        });
+    }
+
+    private void logowanieNieudane(boolean newUser) {
+        closeSocket();
+        loggedProperly = false;
+        waitingForLogResponse = false;
+        Platform.runLater(() -> {
+            statusLabel.setTextFill(Color.RED);
+            statusLabel.setText(newUser? "Użytkownik już istenije!":"Nieudane logowanie!");
+        });
+    }
+
+    private void newSocketConnection() {
+        sc = new SocketConnection(ip, port);
+        Main.setSocketConnection(sc);
     }
 
     @FXML
     private void registerNewUser() {
+        updateFields();
+        newSocketConnection();
+        createResopnseThread(true);
+        sendNewUserDetails();
 
+    }
+
+    private void sendNewUserDetails() {
+        sc.send(NEW_USER_PREFIX + username + ";" + password + ";");
+    }
+
+    private void updateFields() {
+        username = usernameTextField.getText();
+        password = passwordField.getText();
+        ip = ipTextField.getText();
+        port = portTextField.getText();
     }
 
     @Override
@@ -115,7 +137,11 @@ public class LoginController implements Initializable {
         if (defaultSettings.exists()) {
             loadSettings(defaultSettings);
         } else {
-            ipTextField.setText("localhost");
+            try {
+                ipTextField.setText(InetAddress.getLocalHost().getHostAddress());
+            } catch (UnknownHostException e) {
+                ipTextField.setText("localhost");
+            }
             portTextField.setText("12345");
         }
     }
@@ -156,5 +182,25 @@ public class LoginController implements Initializable {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public static SocketConnection getSc() {
+        return sc;
+    }
+
+    private void closeSocket(){
+        try {
+            sc.getSocket().close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public SoundMenager getSoundMenager() {
+        return soundMenager;
+    }
+
+    public boolean loggedProperly() {
+        return loggedProperly;
     }
 }

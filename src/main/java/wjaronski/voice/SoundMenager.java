@@ -1,5 +1,7 @@
 package wjaronski.voice;
 
+import wjaronski.socket.SocketConnection;
+
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
@@ -13,6 +15,7 @@ import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.Scanner;
 
 public class SoundMenager {
@@ -29,16 +32,18 @@ public class SoundMenager {
     private Socket sock = null;
     private SourceDataLine sourceDataLine;
     private Mixer.Info[] mixers;
+    private Thread playingThread, recordingThread;
+    private boolean speakerMuted, micMuted;
 
 
-    public SoundMenager(Socket socket, Mixer mixer) {
+    private SoundMenager(Socket socket, Mixer mixer) {
         setUpSocket(socket);
         setUpMic(mixer);
         setUpOutput();
     }
 
     public SoundMenager(Socket socket) {
-        this(socket,AudioSystem.getMixer(AudioSystem.getMixerInfo()[3]));
+        this(socket, AudioSystem.getMixer(AudioSystem.getMixerInfo()[3]));
     }
 
     private void setUpSocket(Socket socket) {
@@ -92,20 +97,20 @@ public class SoundMenager {
     public void startRecording() {
         byte buffer[] = new byte[BUFF_SIZE];
         isRecording = true;
-        new Thread(() -> {
+
+        (recordingThread = new Thread(() -> {
             try {
                 while (isRecording()) {
                     targetDataLine.read(buffer, 0, BUFF_SIZE);
-                    out.write(buffer);
+                    if (!micMuted) out.write(buffer);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }).start();
-    }
+        })).start();
+        System.err.println("Start record");
 
-    public void stopRecording() {
-        isRecording = false;
+
     }
 
     public boolean isRecording() {
@@ -115,39 +120,39 @@ public class SoundMenager {
     public void startPlaying() {
         byte buffer[] = new byte[BUFF_SIZE];
         isPlaying = true;
-        new Thread(() -> {
+        (playingThread = new Thread(() -> {
             try {
-                while (isPlaying() && in.read(buffer) != -1) {
-                    sourceDataLine.write(buffer, 0, BUFF_SIZE);
-                }
+                while (isPlaying() && in.read(buffer) != -1)
+                    if (!speakerMuted) sourceDataLine.write(buffer, 0, BUFF_SIZE);
                 sourceDataLine.drain();
-
-            } catch (Exception e) {
+            } catch (SocketException e) {
+                System.err.println("Connection closed");
+            } catch (IOException e) {
                 e.printStackTrace();
             }
-        }).start();
+        })).start();
+        System.err.println("Start play");
     }
 
     private boolean isPlaying() {
         return isPlaying;
     }
 
-    public void stopPlaying() {
-        isPlaying = false;
-    }
-
     public void cleanUp() {
         isPlaying = false;
         isRecording = false;
+        targetDataLine.close();
+        sourceDataLine.drain();
         sourceDataLine.close();
     }
 
     /**
      * Aby dostac mixer wspierajace wysylanie dzwieku to wykonac
      * wywolac isLineSupported(mixer) na SoundManagerze
+     *
      * @return list of Mixers
      */
-    public Mixer.Info[] getMixers(){
+    public Mixer.Info[] getMixers() {
         audioFormat = getAudioFormat();
 
         DataLine.Info dataLineInfo = new DataLine.Info(
@@ -157,7 +162,7 @@ public class SoundMenager {
         return AudioSystem.getMixerInfo();
     }
 
-    public boolean isLineSupported(Mixer mixer){
+    public boolean isLineSupported(Mixer mixer) {
         DataLine.Info dataLineInfo = new DataLine.Info(
                 TargetDataLine.class, audioFormat);
         return mixer.isLineSupported(dataLineInfo);
@@ -169,7 +174,7 @@ public class SoundMenager {
             Socket socket = new Socket("127.0.0.1", 12345);
             Mixer mixer = AudioSystem.getMixer(AudioSystem.getMixerInfo()[3]);
 
-            SoundMenager sm = new SoundMenager(socket,mixer);
+            SoundMenager sm = new SoundMenager(socket, mixer);
             sm.startRecording();
             sm.startPlaying();
 
@@ -181,5 +186,28 @@ public class SoundMenager {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void closeRequest() {
+        if(!sock.isClosed()){
+            byte buffer[] = new byte[BUFF_SIZE];
+            buffer[0]=0;
+            try {
+                out.write(buffer,0,BUFF_SIZE);
+                sock.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void setSpeakerMuted(boolean speakerMuted) {
+        System.err.println(speakerMuted ? "Speaker muted" : "Speaker unmuted");
+        this.speakerMuted = speakerMuted;
+    }
+
+    public void setMicMuted(boolean micMuted) {
+        System.err.println(micMuted ? "Mic muted" : "Mic unmuted");
+        this.micMuted = micMuted;
     }
 }
