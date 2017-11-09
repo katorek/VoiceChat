@@ -112,13 +112,10 @@ void *ThreadBehavior(void *t_data)
     int conn_sck = (*th_data).conn_sck_desc;
     
     printf("New connection on:%d\n",conn_sck);
-    //logowanie, username;password
     readC = read(conn_sck,bufor,100);
     sprintf(bufor,"%s",bufor);
-    printf("%s\n",bufor);
     char *user = (char *)malloc(strlen(bufor)+1);
     char *pass = (char *)malloc(strlen(bufor)+1);
-//    printf("%s",bufor);
 
     int i = 0;
     while(bufor[i]!=';')++i;
@@ -130,24 +127,18 @@ void *ThreadBehavior(void *t_data)
     strncpy(pass,bufor+i,j);
 
 
-
-//    char *usernameTemp = "";
-//    char *passwordTemp = "";
-//    for(i=0;i<50;++i) usernameTemp = usernameTemp + bufor[i];
-//    for(i=50;i<100;++i) passwordTemp = passwordTemp + bufor[i];
-    printf("Sending back: %s;%s\n",user,pass);
+    printf("User: %s logged in.\n",user);
     memset(bufor,0,100);
     bufor[0]='1';
     bufor[1]='\n';
 
     sprintf(bufor,"%s",bufor);
-    printf("%s\n",bufor);
+//    printf("%s\n",bufor);
 //    printf("%s,%s\n",usernameTemp,passwordTemp);
     write(conn_sck,bufor,100);
-    write(conn_sck,bufor,100);
-    write(conn_sck,bufor,100);
+//    write(conn_sck,bufor,100);
+//    write(conn_sck,bufor,100);
 
-    printf("Listening\n");
     //komunikacja z innymi
     while((readC = read(conn_sck, bufor, 100))>0){
         sprintf(bufor,"%s",bufor);
@@ -180,6 +171,7 @@ void handleConnection(int connection_socket_descriptor) {
 
 int main(int argc, char* argv[])
 {
+    printf("Running Voice Chat Server V1.0 by Kator\n");
     int tempI=0;
     for(tempI=0;tempI < MAX_CONNECTIONS; ++tempI){
         descs[tempI]= 0;

@@ -8,7 +8,9 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.paint.Color;
+import javafx.stage.Stage;
 import wjaronski.exception.LogowanieNieudaneException;
+import wjaronski.exception.LogowanieUdaneException;
 import wjaronski.socket.SocketConnection;
 import wjaronski.voice.SoundMenager;
 
@@ -72,22 +74,32 @@ public class LoginController implements Initializable {
                         System.out.println("Waiting for response");
                         sc.loginResponse();
                     } catch (LogowanieNieudaneException e) {
+                        waitingForLogResponse = false;
                         Platform.runLater(() -> {
                             statusLabel.setTextFill(Color.RED);
                             statusLabel.setText("Nieudane logowanie");
                         });
+                    } catch (LogowanieUdaneException e) {
+                        waitingForLogResponse = true;
+                        Platform.runLater(() -> {
+                            Stage stage = (Stage) loginButton.getScene().getWindow();
+                            stage.close();
+                        });
+                        //otworzyc main window
                     }
                 }
+
 //                Platform.runLater(() -> statusLabel.setText(""));
             }).start();
         }
         sc.send(username + ";" + password + ";");
-        if(sc.loggedProperly()){
-            soundMenager = new SoundMenager(sc.getSocket());
-            soundMenager.startPlaying();
-            soundMenager.startRecording();
-
-        }
+//        if (sc.loggedProperly()) {
+//            System.out.println("SOUND STARTING");
+//            soundMenager = new SoundMenager(sc.getSocket());
+//            soundMenager.startPlaying();
+//            soundMenager.startRecording();
+//
+//        }
     }
 
     @FXML
@@ -122,14 +134,14 @@ public class LoginController implements Initializable {
             String[] arr = br.readLine().split(FILE_SEPARATOR);
             ipTextField.setText(ip = arr[0]);
             portTextField.setText(port = arr[1]);
-            usernameTextField.setText(username = arr[2]==null?"":arr[2]);
-            passwordField.setText(password = arr[3]==null?"":arr[3]);
+            usernameTextField.setText(username = arr[2]);
+            passwordField.setText(password = arr[3]);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            usernameTextField.setText(username = "");
+            passwordField.setText(password = "");
         }
         if (!file.delete()) System.err.println("Couldnt delete settings file");
-        ;
     }
 
     public static void close() {

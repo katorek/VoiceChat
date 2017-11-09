@@ -1,6 +1,7 @@
 package wjaronski.socket;
 
 import wjaronski.exception.LogowanieNieudaneException;
+import wjaronski.exception.LogowanieUdaneException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -21,9 +22,9 @@ public class SocketConnection {
 
     private boolean logged = false;
 
-    public SocketConnection(String ip, String port){
-        System.err.println(ip+":"+port);
-        init(ip,port);
+    public SocketConnection(String ip, String port) {
+        System.err.println(ip + ":" + port);
+        init(ip, port);
     }
 
     private void init(String ip, String port) {
@@ -94,14 +95,14 @@ public class SocketConnection {
         }).start();
     }
 
-    public void establishConnection(){
+    public void establishConnection() {
 //        utworzWatekNasluchujacy();
 //        czytajZKlawaituryIWyslij();
 //        cleanUp();
     }
 
     public static void main(String[] args) {
-        SocketConnection sc = new SocketConnection("127.0.0.1","12345");
+        SocketConnection sc = new SocketConnection("127.0.0.1", "12345");
         sc.establishConnection();
 //        init();
 //        utworzWatekNasluchujacy();
@@ -113,15 +114,18 @@ public class SocketConnection {
         wyslij(s);
     }
 
-    public void loginResponse() throws LogowanieNieudaneException{
+    public void loginResponse() throws LogowanieNieudaneException, LogowanieUdaneException {
         String line = czytaj();
         System.out.println(line);
         //1 - accepted, 2-rejected
-        if(line.charAt(0)=='2') {
+        if (line.charAt(0) == '2') {
             System.err.println("THROWNIG");
             throw new LogowanieNieudaneException("Nie udane logowanie");
         }
-        if(line.charAt(0)=='1')logged = true;
+        if (line.charAt(0) == '1') {
+            logged = true;
+            throw new LogowanieUdaneException();
+        }
     }
 
     public boolean loggedProperly() {
