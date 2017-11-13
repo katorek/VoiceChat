@@ -56,6 +56,7 @@ public class MainWindowController implements Initializable{
     public void initialize(URL location, ResourceBundle resources) {
         socketConnection = Main.getSocketConnection();
         sm = new SoundMenager(socketConnection.getSocket());
+        // todo otrzymanie listy uzytkownikow
         sm.startPlaying();
         sm.startRecording();
     }

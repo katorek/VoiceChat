@@ -1,7 +1,5 @@
 package wjaronski.voice;
 
-import wjaronski.socket.SocketConnection;
-
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
@@ -19,7 +17,7 @@ import java.net.SocketException;
 import java.util.Scanner;
 
 public class SoundMenager {
-    private static final Integer BUFF_SIZE = 1000;
+    private static final Integer BUFF_SIZE = 99;
 
     private boolean isRecording = false;
     private boolean isPlaying = false;
@@ -118,12 +116,15 @@ public class SoundMenager {
     }
 
     public void startPlaying() {
-        byte buffer[] = new byte[BUFF_SIZE];
+        byte buffer[] = new byte[BUFF_SIZE+1];
         isPlaying = true;
         (playingThread = new Thread(() -> {
             try {
                 while (isPlaying() && in.read(buffer) != -1)
-                    if (!speakerMuted) sourceDataLine.write(buffer, 0, BUFF_SIZE);
+                    if(buffer[99]=='9') System.err.println("LISTA RECEIVED\n" +strFromBuff(buffer));
+                    if (!speakerMuted) {
+                        sourceDataLine.write(buffer, 0, BUFF_SIZE);
+                    }
                 sourceDataLine.drain();
             } catch (SocketException e) {
                 System.err.println("Connection closed");
@@ -132,6 +133,16 @@ public class SoundMenager {
             }
         })).start();
         System.err.println("Start play");
+    }
+
+    private String strFromBuff(byte[] buffer) {
+        StringBuilder sb = new StringBuilder("");
+        for(byte b: buffer){
+            System.err.print(b+" ");
+            char c = (char) b;
+            sb.append(c);
+        }
+        return sb.toString();
     }
 
     private boolean isPlaying() {

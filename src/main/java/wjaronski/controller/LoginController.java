@@ -10,18 +10,28 @@ import javafx.scene.control.TextField;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import wjaronski.Main;
-import wjaronski.exception.LogowanieNieudaneException;
-import wjaronski.exception.LogowanieUdaneException;
 import wjaronski.socket.SocketConnection;
 import wjaronski.voice.SoundMenager;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ResourceBundle;
 
+import static wjaronski.socket.SocketConnection.LOGOWANIE_NIEUDANE;
+import static wjaronski.socket.SocketConnection.LOGOWANIE_UDANE;
+import static wjaronski.socket.SocketConnection.UZYTKOWNIK_JUZ_ZALOGOWANY;
+
+
 public class LoginController implements Initializable {
+
+
     private static String NEW_USER_PREFIX = "5";
     private static String USER_LOGIN_PREFIX = "4";
     private static String FILE_SEPARATOR = ";";
@@ -72,12 +82,20 @@ public class LoginController implements Initializable {
             waitingForLogResponse = true;
             new Thread(() -> {
                 if (!sc.loggedProperly()) {
-                    try {
-                        sc.loginResponse();
-                    } catch (LogowanieNieudaneException e) {
-                        logowanieNieudane(newUser);
-                    } catch (LogowanieUdaneException e) {
-                        logowanieUdane();
+                    int loginStatus = sc.loginResponse();
+                    switch (loginStatus) {
+                        case LOGOWANIE_UDANE: {
+                            logowanieUdane();
+                            break;
+                        }
+                        case LOGOWANIE_NIEUDANE: {
+                            logowanieNieudane("Nie udane logowanie!");
+                            break;
+                        }
+                        case UZYTKOWNIK_JUZ_ZALOGOWANY: {
+                            logowanieNieudane("Użytkownik jest już zalogowany!");
+                            break;
+                        }
                     }
                 }
             }).start();
@@ -94,13 +112,14 @@ public class LoginController implements Initializable {
         });
     }
 
-    private void logowanieNieudane(boolean newUser) {
+    private void logowanieNieudane(String msg) {
+        System.err.println("MSG: " + msg);
         closeSocket();
         loggedProperly = false;
         waitingForLogResponse = false;
         Platform.runLater(() -> {
             statusLabel.setTextFill(Color.RED);
-            statusLabel.setText(newUser? "Użytkownik już istenije!":"Nieudane logowanie!");
+            statusLabel.setText(msg);
         });
     }
 
@@ -188,7 +207,7 @@ public class LoginController implements Initializable {
         return sc;
     }
 
-    private void closeSocket(){
+    private void closeSocket() {
         try {
             sc.getSocket().close();
         } catch (IOException e) {

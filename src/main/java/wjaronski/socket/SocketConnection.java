@@ -1,8 +1,5 @@
 package wjaronski.socket;
 
-import wjaronski.exception.LogowanieNieudaneException;
-import wjaronski.exception.LogowanieUdaneException;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -17,8 +14,6 @@ public class SocketConnection {
     private static Scanner klawa;
     private static PrintWriter out;
     private static BufferedReader in;
-//    private BufferedInputStream in;
-//    private BufferedOutputStream out;
 
     private boolean logged = false;
 
@@ -110,18 +105,14 @@ public class SocketConnection {
         wyslij(s);
     }
 
-    public void loginResponse() throws LogowanieNieudaneException, LogowanieUdaneException {
-        String line = czytaj();
-        System.out.println(line);
-        //1 - accepted, 2-rejected
-        if (line.charAt(0) == '2') {
-            System.err.println("THROWNIG");
-            throw new LogowanieNieudaneException("Nie udane logowanie");
-        }
-        if (line.charAt(0) == '1') {
-            logged = true;
-            throw new LogowanieUdaneException();
-        }
+    public static final int LOGOWANIE_UDANE = 1;
+    public static final int LOGOWANIE_NIEUDANE = 2;
+    public static final int UZYTKOWNIK_JUZ_ZALOGOWANY = 3;
+
+
+    public int loginResponse() {
+        String response = czytaj();
+        return Integer.valueOf(response.charAt(0)+"");
     }
 
     public boolean loggedProperly() {

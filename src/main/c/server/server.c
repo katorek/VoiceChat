@@ -3,29 +3,50 @@ Run on linux,
 Requires linux libraries
 Run 'make' to compile
 */
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <netdb.h>
+#include <net/if.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <pthread.h>
 //lab_sec_1
 #define SERVER_PORT 12345
 #define QUEUE_SIZE 5
 #define MAX_CONNECTIONS 5
 #define MAX_USERS 10
 
+#define COLOR_UNDERLINE   "\x1b[4m"
+
+#define COLOR_BBLACK   "\x1b[40m"
+#define COLOR_BRED     "\x1b[41m"
+#define COLOR_BGREEN   "\x1b[42m"
+#define COLOR_BYELLOW  "\x1b[43m"
+#define COLOR_BBLUE    "\x1b[44m"
+#define COLOR_BMAGENTA "\x1b[45m"
+#define COLOR_BCYAN    "\x1b[46m"
+
+#define COLOR_RED     "\x1b[1;31m"
+#define COLOR_GREEN   "\x1b[1;32m"
+#define COLOR_YELLOW  "\x1b[1;33m"
+#define COLOR_BLUE    "\x1b[1;34m"
+#define COLOR_MAGENTA "\x1b[1;35m"
+#define COLOR_CYAN    "\x1b[1;36m"
+#define COLOR_RESET   "\x1b[0m"
+
 struct users_arr
 {
     char *username;
     char *password;
+    int logged; //0 - not logged, 1 - logged already
 };
 
 int userCount = 0;
@@ -43,10 +64,7 @@ pthread_mutex_t lista_mutex = PTHREAD_MUTEX_INITIALIZER;
 void addUser(char *username, char *password){
     users[userCount].username=username;
     users[userCount].password=password;
-
-//    strcpy(users[userCount].username,username);
-//    strcpy(users[userCount].password,password);
-    printf("New user:%s, p:%s\n",users[userCount].username,users[userCount].password);
+    printf("New user:"COLOR_YELLOW"%s"COLOR_RESET", p:"COLOR_MAGENTA"%s\n"COLOR_RESET,users[userCount].username,users[userCount].password);
     ++userCount;
 }
 
@@ -58,14 +76,42 @@ int userExists(char *user){
    return 0;
 }
 
-int logUser(char *user, char *pass){
+void wyslijZalogowanychUzytkownikow(){
+    int i, j;
+    for(i=0;i<userCount;++i){
+        if(users[i].logged!=0){
+            for(j=0;j<userCount;++j){
+                if(i==j)continue;
+                if(users[j].logged!=0) {
+//                    printf("%s <- %s",users[i].);
+                    char buf[100];
+                    memset(buf,0,100);
+                    strcpy(buf,users[j].username);
+                    buf[99]='9';
+                    //todo copy z users[j].username do bufora
+                    write(users[i].logged,buf,100);
+                }
+            }
+        }
+    }
+}
+
+int logUser(char *user, char *pass, int socket){
+    //todo wyslanie do wsyzstkich uzytkownikow listy z zalogowanymi uzytkownikami
     int i;
+    wyslijZalogowanychUzytkownikow();
     for(i=0;i<userCount;++i){
 //        printf("COMPARING\n%s %s\n%s %s\n",user,pass,users[i].username,users[i].password);
         if(*users[i].username==*user &&
         *users[i].password==*pass
         &&(strlen(users[i].username)==strlen(user))
-        &&(strlen(users[i].password)==strlen(pass))) return 1;
+        &&(strlen(users[i].password)==strlen(pass))){
+            if(users[i].logged == 0) {
+                users[i].logged = socket;
+                return 1;
+            }
+            else return 2;
+        }
     }
     return 0;
 }
@@ -88,6 +134,12 @@ void usunIdZListy(int id){
     for(i=0;i<MAX_CONNECTIONS;++i){
         if(descs[i]==id){
             descs[i] = 0;
+            break;
+        }
+    }
+    for(i=0;i<userCount;++i){
+        if(users[i].logged == id){
+            users[i].logged = 0;
             break;
         }
     }
@@ -124,9 +176,27 @@ void wyslijDoPozostalych(int socket,char messsage[]){
     }
 }
 
+void printIP(){
+    int fd;
+     struct ifreq ifr;
 
-void *ThreadBehavior(void *t_data)
-{
+     fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+     /* I want to get an IPv4 IP address */
+     ifr.ifr_addr.sa_family = AF_INET;
+
+     /* I want IP address attached to "eth0" */
+     strncpy(ifr.ifr_name, "eth0", IFNAMSIZ-1);
+
+     ioctl(fd, SIOCGIFADDR, &ifr);
+
+     close(fd);
+
+     /* display result */
+     printf(COLOR_YELLOW COLOR_UNDERLINE"IP:PORT\n"COLOR_RESET COLOR_GREEN"%s:%d\n"COLOR_RESET, inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr),SERVER_PORT);
+}
+
+void *ThreadBehavior(void *t_data){
     pthread_detach(pthread_self());
     struct thread_data_t *th_data = (struct thread_data_t*)t_data;
     
@@ -135,14 +205,13 @@ void *ThreadBehavior(void *t_data)
     int readC = 0;
     int conn_sck = (*th_data).conn_sck_desc;
     
-    printf("New connection on:%d\n",conn_sck);
+    printf("Connection "COLOR_GREEN"opened: "COLOR_MAGENTA"%d\n"COLOR_RESET,conn_sck);
     readC = read(conn_sck,bufor,100);
     sprintf(bufor,"%s",bufor);
     char *user = (char *)malloc(strlen(bufor)+1);
     char *pass = (char *)malloc(strlen(bufor)+1);
 
     char choice = bufor[0];
-    printf("c:%c\n",choice);
 
     int i = 1;
     while(bufor[i]!=';')++i;
@@ -158,43 +227,47 @@ void *ThreadBehavior(void *t_data)
     //5 new user
     if(choice=='5') {
         if(userExists(user)==1){//exists
-            printf("User exists!\n");
+            printf(COLOR_RED"User exists!\n"COLOR_RESET);
             bufor[1]='2';
             loggedProperly=0;
         }else{
             bufor[0]='1';
             addUser(user,pass);
-//            logUser(user,pass);
+            logUser(user,pass,conn_sck);
         }
     }
     if(choice=='4'){
-        printf("4: ");
-        if(logUser(user,pass)==1){
+        printf(COLOR_YELLOW"%s"COLOR_RESET" -> ",user);
+        int logStatus =logUser(user,pass,conn_sck);
+        if(logStatus==1){
             bufor[0]='1';
-            printf("login success\n");//dobre logowanie
+            printf(COLOR_GREEN"login success\n"COLOR_RESET);//dobre logowanie
+        }else if(logStatus==2){
+            loggedProperly=0;
+            bufor[0]='3';
+            printf(COLOR_RED"already logged\n"COLOR_RESET);//dobre logowanie
         }
         else{
             loggedProperly=0;
             bufor[0]='2';
-            printf("login failed\n");//zle logowanie
+            printf(COLOR_RED"login failed\n"COLOR_RESET);//zle logowanie
         }
     }
 
-//    printf("User: %s logged in.\n",user);
     bufor[1]='\n';
 
     sprintf(bufor,"%s",bufor);
     write(conn_sck,bufor,100);
 
     if(loggedProperly == 1){
-        while((readC = read(conn_sck, bufor, 100))>0){
+        while((readC = read(conn_sck, bufor, 99))>0){
             sprintf(bufor,"%s",bufor);
     //        printf("%s\n",bufor);
             wyslijDoPozostalych(conn_sck,bufor);
         }
     }
 
-    printf("Connection closed on:%d\n",conn_sck); 
+    printf("Connection "COLOR_RED"closed:"COLOR_MAGENTA"%d\n"COLOR_RESET,conn_sck);
     bufor[0]= '0';
     write(conn_sck, bufor,100);
     free(th_data);
@@ -222,7 +295,11 @@ int main(int argc, char* argv[])
 {
     addUser("wojtek","12345");
     addUser("guest","123");
-    printf("Running Voice Chat Server V1.0 by Kator\n");
+
+    printIP();
+
+    printf("Running Voice Chat Server V1.0 by "COLOR_CYAN COLOR_UNDERLINE"Kator\n"COLOR_RESET);
+
     int tempI=0;
     for(tempI=0;tempI < MAX_CONNECTIONS; ++tempI){
         descs[tempI]= 0;
