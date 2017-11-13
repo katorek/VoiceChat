@@ -121,7 +121,8 @@ public class SoundMenager {
         (playingThread = new Thread(() -> {
             try {
                 while (isPlaying() && in.read(buffer) != -1)
-                    if(buffer[99]=='9') System.err.println("LISTA RECEIVED\n" +strFromBuff(buffer));
+                    if(buffer[99]=='9')
+                        System.err.println("user: " +strFromBuff(buffer)+"\n");
                     if (!speakerMuted) {
                         sourceDataLine.write(buffer, 0, BUFF_SIZE);
                     }
@@ -137,12 +138,9 @@ public class SoundMenager {
 
     private String strFromBuff(byte[] buffer) {
         StringBuilder sb = new StringBuilder("");
-        for(byte b: buffer){
-            System.err.print(b+" ");
-            char c = (char) b;
-            sb.append(c);
-        }
-        return sb.toString();
+        for(byte b: buffer)
+            sb.append((char) b);
+        return sb.toString().substring(0,sb.length()-2);
     }
 
     private boolean isPlaying() {

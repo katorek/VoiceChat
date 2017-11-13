@@ -60,12 +60,15 @@ struct thread_data_t
 
 int descs[MAX_CONNECTIONS];
 pthread_mutex_t lista_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t active_users = PTHREAD_MUTEX_INITIALIZER;
 
 void addUser(char *username, char *password){
+    pthread_mutex_lock(&active_users);
     users[userCount].username=username;
     users[userCount].password=password;
     printf("New user:"COLOR_YELLOW"%s"COLOR_RESET", p:"COLOR_MAGENTA"%s\n"COLOR_RESET,users[userCount].username,users[userCount].password);
     ++userCount;
+    pthread_mutex_unlock(&active_users);
 }
 
 int userExists(char *user){
@@ -77,13 +80,13 @@ int userExists(char *user){
 }
 
 void wyslijZalogowanychUzytkownikow(){
+    pthread_mutex_lock(&active_users);
     int i, j;
     for(i=0;i<userCount;++i){
         if(users[i].logged!=0){
             for(j=0;j<userCount;++j){
-                if(i==j)continue;
                 if(users[j].logged!=0) {
-//                    printf("%s <- %s",users[i].);
+                    printf("%s <- %s\n",users[i].username, users[j].username);
                     char buf[100];
                     memset(buf,0,100);
                     strcpy(buf,users[j].username);
@@ -94,12 +97,13 @@ void wyslijZalogowanychUzytkownikow(){
             }
         }
     }
+    pthread_mutex_unlock(&active_users);
 }
 
 int logUser(char *user, char *pass, int socket){
     //todo wyslanie do wsyzstkich uzytkownikow listy z zalogowanymi uzytkownikami
     int i;
-    wyslijZalogowanychUzytkownikow();
+
     for(i=0;i<userCount;++i){
 //        printf("COMPARING\n%s %s\n%s %s\n",user,pass,users[i].username,users[i].password);
         if(*users[i].username==*user &&
@@ -238,7 +242,7 @@ void *ThreadBehavior(void *t_data){
     }
     if(choice=='4'){
         printf(COLOR_YELLOW"%s"COLOR_RESET" -> ",user);
-        int logStatus =logUser(user,pass,conn_sck);
+        int logStatus = logUser(user,pass,conn_sck);
         if(logStatus==1){
             bufor[0]='1';
             printf(COLOR_GREEN"login success\n"COLOR_RESET);//dobre logowanie
@@ -260,6 +264,7 @@ void *ThreadBehavior(void *t_data){
     write(conn_sck,bufor,100);
 
     if(loggedProperly == 1){
+        wyslijZalogowanychUzytkownikow();
         while((readC = read(conn_sck, bufor, 99))>0){
             sprintf(bufor,"%s",bufor);
     //        printf("%s\n",bufor);
