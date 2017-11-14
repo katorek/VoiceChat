@@ -11,12 +11,10 @@ import wjaronski.controller.MainWindowController;
 import wjaronski.socket.SocketConnection;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 
 public class Main extends Application {
     private static SocketConnection socketConnection;
-    private Stage loginStage, mainStage;
+    private Stage loginStage;
     private boolean stageClosing = false;
     private boolean mainStageClosed = false;
 
@@ -51,8 +49,13 @@ public class Main extends Application {
         loginStage.close();
         mainStageClosed = false;
         try {
-            Parent mainWindow = FXMLLoader.load(getClass().getResource("/mainWindow.fxml"));
-            mainStage = new Stage();
+            FXMLLoader fxmlLoader = new FXMLLoader();
+            Parent mainWindow = fxmlLoader.load(getClass().getResource("/mainWindow.fxml").openStream());
+
+            MainWindowController c = fxmlLoader.getController();
+            c.setController(c);
+//            Parent mainWindow = FXMLLoader.load(getClass().getResource("/mainWindow.fxml"));
+            Stage mainStage = new Stage();
             mainStage.initModality(Modality.WINDOW_MODAL);
             mainStage.setTitle("Komunikator glosowy");
             mainStage.setScene(new Scene(mainWindow));

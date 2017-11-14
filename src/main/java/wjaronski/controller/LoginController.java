@@ -7,11 +7,11 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
+import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import wjaronski.Main;
 import wjaronski.socket.SocketConnection;
-import wjaronski.voice.SoundMenager;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -26,22 +26,20 @@ import java.util.ResourceBundle;
 
 import static wjaronski.socket.SocketConnection.LOGOWANIE_NIEUDANE;
 import static wjaronski.socket.SocketConnection.LOGOWANIE_UDANE;
+import static wjaronski.socket.SocketConnection.UZYTKOWNIK_JUZ_ISNIEJE;
 import static wjaronski.socket.SocketConnection.UZYTKOWNIK_JUZ_ZALOGOWANY;
+import static wjaronski.socket.SocketConnection.UZYTKOWNIK_NIE_ISNIEJE;
 
 
 public class LoginController implements Initializable {
+    private static final String FILE_SEPARATOR = ";";
 
-
-    private static String NEW_USER_PREFIX = "5";
-    private static String USER_LOGIN_PREFIX = "4";
-    private static String FILE_SEPARATOR = ";";
     private static String username, password, ip, port;
     private static SocketConnection sc;
     private static boolean loggedProperly = false;
 
     private boolean waitingForLogResponse = false;
 
-    private static SoundMenager soundMenager;
 
     @FXML
     private TextField ipTextField;
@@ -58,8 +56,9 @@ public class LoginController implements Initializable {
     @FXML
     private Button loginButton;
 
+    @SuppressWarnings("unused")
     @FXML
-    private Button registerBUtton;
+    private Button registerbutton;
 
     @FXML
     private Label statusLabel;
@@ -74,6 +73,7 @@ public class LoginController implements Initializable {
     }
 
     private void sendLoginDetails() {
+        String USER_LOGIN_PREFIX = "4";
         sc.send(USER_LOGIN_PREFIX + username + ";" + password + ";");
     }
 
@@ -89,11 +89,19 @@ public class LoginController implements Initializable {
                             break;
                         }
                         case LOGOWANIE_NIEUDANE: {
-                            logowanieNieudane("Nie udane logowanie!");
+                            logowanieNieudane("Nie udane logowanie! Haslo nie poprawne!");
                             break;
                         }
                         case UZYTKOWNIK_JUZ_ZALOGOWANY: {
                             logowanieNieudane("Użytkownik jest już zalogowany!");
+                            break;
+                        }
+                        case UZYTKOWNIK_JUZ_ISNIEJE: {
+                            logowanieNieudane("Taki uzytkownik juz istnieje!");
+                            break;
+                        }
+                        case UZYTKOWNIK_NIE_ISNIEJE: {
+                            logowanieNieudane("Taki uzytownik nie istnieje!");
                             break;
                         }
                     }
@@ -138,6 +146,7 @@ public class LoginController implements Initializable {
     }
 
     private void sendNewUserDetails() {
+        String NEW_USER_PREFIX = "5";
         sc.send(NEW_USER_PREFIX + username + ";" + password + ";");
     }
 
@@ -151,6 +160,9 @@ public class LoginController implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         setUpdateListener();
+        setEnterListeners();
+
+        loginButton.setText("Zaloguj \u21B5");
 
         File defaultSettings = new File(".settings");
         if (defaultSettings.exists()) {
@@ -165,6 +177,21 @@ public class LoginController implements Initializable {
         }
     }
 
+    private void setEnterListeners() {
+        portTextField.setOnKeyPressed((e) -> {
+            if (e.getCode().equals(KeyCode.ENTER)) logUser();
+        });
+        usernameTextField.setOnKeyPressed((e) -> {
+            if (e.getCode().equals(KeyCode.ENTER)) logUser();
+        });
+        passwordField.setOnKeyPressed((e) -> {
+            if (e.getCode().equals(KeyCode.ENTER)) logUser();
+        });
+        ipTextField.setOnKeyPressed((e) -> {
+            if (e.getCode().equals(KeyCode.ENTER)) logUser();
+        });
+    }
+
     private void setUpdateListener() {
         ipTextField.textProperty().addListener((o, oldValue, newValue) -> ip = newValue);
         portTextField.textProperty().addListener((o, oldValue, newValue) -> port = newValue);
@@ -173,7 +200,6 @@ public class LoginController implements Initializable {
     }
 
     private void loadSettings(File file) {
-        //todo oddzielone srednikiem dane
         try (BufferedReader br = new BufferedReader(new FileReader(file))
         ) {
             String[] arr = br.readLine().split(FILE_SEPARATOR);
@@ -192,12 +218,11 @@ public class LoginController implements Initializable {
     public static void close() {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(new File(".settings")))
         ) {
-            StringBuilder sb = new StringBuilder();
-            sb.append(ip).append(FILE_SEPARATOR)
-                    .append(port).append(FILE_SEPARATOR)
-                    .append(username == null ? "" : username).append(FILE_SEPARATOR)
-                    .append(password == null ? "" : password);
-            bw.write(sb.toString());
+            String sb = ip + FILE_SEPARATOR +
+                    port + FILE_SEPARATOR +
+                    (username == null ? "" : username) + FILE_SEPARATOR +
+                    (password == null ? "" : password);
+            bw.write(sb);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -213,10 +238,6 @@ public class LoginController implements Initializable {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    public SoundMenager getSoundMenager() {
-        return soundMenager;
     }
 
     public boolean loggedProperly() {

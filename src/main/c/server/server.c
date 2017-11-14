@@ -61,14 +61,35 @@ struct thread_data_t
 int descs[MAX_CONNECTIONS];
 pthread_mutex_t lista_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t active_users = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t fileWrite = PTHREAD_MUTEX_INITIALIZER;
+
+void writeUsers(){
+    pthread_mutex_lock(&fileWrite);
+    int c, i;
+    FILE *file;
+    file = fopen("users.txt","w");
+    if(file){
+        for(i=0;i<userCount;++i){
+            fputs(users[i].username, file);
+            fputs(";", file);
+            fputs(users[i].password, file);
+            fputs(";", file);
+        }
+        fclose(file);
+    }
+    pthread_mutex_unlock(&fileWrite);
+}
 
 void addUser(char *username, char *password){
     pthread_mutex_lock(&active_users);
     users[userCount].username=username;
     users[userCount].password=password;
-    printf("New user:"COLOR_YELLOW"%s"COLOR_RESET", p:"COLOR_MAGENTA"%s\n"COLOR_RESET,users[userCount].username,users[userCount].password);
+//    printf(COLOR_BYELLOW"New user:"COLOR_RESET COLOR_YELLOW"%s"COLOR_RESET", p:"COLOR_MAGENTA"%s\n"COLOR_RESET,users[userCount].username,users[userCount].password);
+//    printf(COLOR_YELLOW"%s"COLOR_RESET" -> ",username);
+//    printf(COLOR_GREEN"login success\n"COLOR_RESET);//dobre logowanie
     ++userCount;
     pthread_mutex_unlock(&active_users);
+    writeUsers();
 }
 
 int userExists(char *user){
@@ -82,28 +103,33 @@ int userExists(char *user){
 void wyslijZalogowanychUzytkownikow(){
     pthread_mutex_lock(&active_users);
     int i, j;
+    char buf[100];
     for(i=0;i<userCount;++i){
         if(users[i].logged!=0){
+            memset(buf,0,100);
+            buf[99]='7';
+            write(users[i].logged,buf,100);
             for(j=0;j<userCount;++j){
+
                 if(users[j].logged!=0) {
-                    printf("%s <- %s\n",users[i].username, users[j].username);
-                    char buf[100];
+//                    printf("%s <- %s\n",users[i].username, users[j].username);
+
                     memset(buf,0,100);
                     strcpy(buf,users[j].username);
-                    buf[99]='9';
-                    //todo copy z users[j].username do bufora
+                    buf[99]='8';
                     write(users[i].logged,buf,100);
                 }
             }
+            memset(buf,0,100);
+            buf[99]='9';
+            write(users[i].logged,buf,100);
         }
     }
     pthread_mutex_unlock(&active_users);
 }
 
 int logUser(char *user, char *pass, int socket){
-    //todo wyslanie do wsyzstkich uzytkownikow listy z zalogowanymi uzytkownikami
     int i;
-
     for(i=0;i<userCount;++i){
 //        printf("COMPARING\n%s %s\n%s %s\n",user,pass,users[i].username,users[i].password);
         if(*users[i].username==*user &&
@@ -148,6 +174,7 @@ void usunIdZListy(int id){
         }
     }
     pthread_mutex_unlock(&lista_mutex);
+    wyslijZalogowanychUzytkownikow();
 }    
 
 void wyslijDoListy(char messsage[]){
@@ -228,33 +255,41 @@ void *ThreadBehavior(void *t_data){
     int loggedProperly = 1;
 
     memset(bufor,0,100);
+    printf(COLOR_YELLOW"%s"COLOR_RESET" -> ",user);
     //5 new user
     if(choice=='5') {
         if(userExists(user)==1){//exists
-            printf(COLOR_RED"User exists!\n"COLOR_RESET);
-            bufor[1]='2';
             loggedProperly=0;
+            printf(COLOR_RED"already exists! Cant register!\n"COLOR_RESET);
+            bufor[0]='4';
         }else{
+            loggedProperly=1;
             bufor[0]='1';
             addUser(user,pass);
             logUser(user,pass,conn_sck);
+            printf(COLOR_GREEN"login success\n"COLOR_RESET);//dobre logowanie
         }
     }
     if(choice=='4'){
-        printf(COLOR_YELLOW"%s"COLOR_RESET" -> ",user);
-        int logStatus = logUser(user,pass,conn_sck);
-        if(logStatus==1){
-            bufor[0]='1';
-            printf(COLOR_GREEN"login success\n"COLOR_RESET);//dobre logowanie
-        }else if(logStatus==2){
-            loggedProperly=0;
-            bufor[0]='3';
-            printf(COLOR_RED"already logged\n"COLOR_RESET);//dobre logowanie
-        }
-        else{
-            loggedProperly=0;
-            bufor[0]='2';
-            printf(COLOR_RED"login failed\n"COLOR_RESET);//zle logowanie
+    int userExist =userExists(user);
+        if(userExist==0){
+            loggedProperly = 0;
+            bufor[0]='5';//user not exists
+            printf(COLOR_RED" not exists\n"COLOR_RESET);//dobre logowanie
+        }else{
+            int logStatus = logUser(user,pass,conn_sck);
+            if(logStatus==1){
+                bufor[0]='1';
+                printf(COLOR_GREEN"login success\n"COLOR_RESET);//dobre logowanie
+            }else if(logStatus==2){
+                loggedProperly=0;
+                bufor[0]='3';
+                printf(COLOR_RED"already logged\n"COLOR_RESET);//already logged
+            }else{
+                loggedProperly=0;
+                bufor[0]='2';
+                printf(COLOR_RED"login failed! Username and Password dont match\n"COLOR_RESET);//zle logowanie
+            }
         }
     }
 
@@ -296,10 +331,63 @@ void handleConnection(int connection_socket_descriptor) {
     }
 }
 
+
+
+void readFile(){
+    int c;
+    FILE *file;
+    file = fopen("users.txt","r");
+    char *u;
+    char *p;
+    u = (char *)malloc(30);
+    p = (char*) malloc(30);
+    char arr[50];
+    int i=0;
+    int userRead = 1;
+
+    if(file){
+        while((c=getc(file))!=EOF){
+            if(c == ';') {
+                if(userRead==-1) {//new user
+                    strcpy(p,arr);
+                    memset(arr,0,50);
+                    i=0;
+                    addUser(u,p);
+                    u = NULL;
+                    p = NULL;
+                    u = (char *)malloc(30);
+                    p = (char*) malloc(30);
+                }
+                if(userRead==1){
+                    strcpy(u,arr);
+                    memset(arr,0,50);
+                    i=0;
+                }
+                userRead=userRead*-1;
+            }else if(c !='\n')
+                arr[i++] = c;
+        }
+//        printf("%s",arr);
+        fclose(file);
+        printf(COLOR_GREEN"Wczytano poprawnie uzytkownikow z users.txt!\n"COLOR_RESET);
+    }else{
+        printf(COLOR_RED"Blad. Nie udalo sie wczytac uzytkownikow z users.txt!\n"COLOR_RESET);
+    }
+}
+
+void printUsers(){
+    int i;
+    printf("\n------------\n");
+    for(i=0;i<userCount;++i){
+        printf("%s,%s\n",users[i].username,users[i].password);
+    }
+}
+
 int main(int argc, char* argv[])
 {
-    addUser("wojtek","12345");
-    addUser("guest","123");
+    readFile();
+//    printUsers();
+
 
     printIP();
 

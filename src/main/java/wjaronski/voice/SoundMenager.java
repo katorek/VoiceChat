@@ -1,7 +1,8 @@
 package wjaronski.voice;
 
+import wjaronski.controller.MainWindowController;
+
 import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.LineUnavailableException;
@@ -10,7 +11,6 @@ import javax.sound.sampled.SourceDataLine;
 import javax.sound.sampled.TargetDataLine;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
@@ -21,18 +21,20 @@ public class SoundMenager {
 
     private boolean isRecording = false;
     private boolean isPlaying = false;
-    private ByteArrayOutputStream byteArrayOutputStream;
     private AudioFormat audioFormat;
     private TargetDataLine targetDataLine;
-    private AudioInputStream audioInputStream;
     private BufferedOutputStream out = null;
     private BufferedInputStream in = null;
     private Socket sock = null;
     private SourceDataLine sourceDataLine;
     private Mixer.Info[] mixers;
-    private Thread playingThread, recordingThread;
     private boolean speakerMuted, micMuted;
 
+    public void setController(MainWindowController controller) {
+        this.controller = controller;
+    }
+
+    private MainWindowController controller;
 
     private SoundMenager(Socket socket, Mixer mixer) {
         setUpSocket(socket);
@@ -85,18 +87,16 @@ public class SoundMenager {
         float sampleRate = 8000.0F;
         int sampleSizeInBits = 8;
         int channels = 1;
-        boolean signed = true;
-        boolean bigEndian = false;
 
-        return new AudioFormat(sampleRate, sampleSizeInBits, channels, signed,
-                bigEndian);
+        return new AudioFormat(sampleRate, sampleSizeInBits, channels, true,
+                false);
     }
 
     public void startRecording() {
         byte buffer[] = new byte[BUFF_SIZE];
         isRecording = true;
 
-        (recordingThread = new Thread(() -> {
+        new Thread(() -> {
             try {
                 while (isRecording()) {
                     targetDataLine.read(buffer, 0, BUFF_SIZE);
@@ -105,42 +105,32 @@ public class SoundMenager {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        })).start();
+        }).start();
         System.err.println("Start record");
-
-
     }
 
-    public boolean isRecording() {
+    private boolean isRecording() {
         return isRecording;
     }
 
     public void startPlaying() {
-        byte buffer[] = new byte[BUFF_SIZE+1];
+        byte buffer[] = new byte[BUFF_SIZE + 1];
         isPlaying = true;
-        (playingThread = new Thread(() -> {
+        new Thread(() -> {
             try {
                 while (isPlaying() && in.read(buffer) != -1)
-                    if(buffer[99]=='9')
-                        System.err.println("user: " +strFromBuff(buffer)+"\n");
-                    if (!speakerMuted) {
+                    if (buffer[99] == '7' || buffer[99]=='8' || buffer[99]=='9') {
+                        controller.listViewByteArrayActions(buffer);
+                    } else if (!speakerMuted)
                         sourceDataLine.write(buffer, 0, BUFF_SIZE);
-                    }
                 sourceDataLine.drain();
             } catch (SocketException e) {
                 System.err.println("Connection closed");
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        })).start();
+        }).start();
         System.err.println("Start play");
-    }
-
-    private String strFromBuff(byte[] buffer) {
-        StringBuilder sb = new StringBuilder("");
-        for(byte b: buffer)
-            sb.append((char) b);
-        return sb.toString().substring(0,sb.length()-2);
     }
 
     private boolean isPlaying() {
@@ -161,16 +151,16 @@ public class SoundMenager {
      *
      * @return list of Mixers
      */
+    @SuppressWarnings("unused")
     public Mixer.Info[] getMixers() {
         audioFormat = getAudioFormat();
-
         DataLine.Info dataLineInfo = new DataLine.Info(
                 TargetDataLine.class, audioFormat);
-
         Mixer.Info[] mixerInfo = AudioSystem.getMixerInfo();
         return AudioSystem.getMixerInfo();
     }
 
+    @SuppressWarnings("unused")
     public boolean isLineSupported(Mixer mixer) {
         DataLine.Info dataLineInfo = new DataLine.Info(
                 TargetDataLine.class, audioFormat);
@@ -189,6 +179,7 @@ public class SoundMenager {
 
             Scanner sc = new Scanner(System.in);
 
+            //noinspection StatementWithEmptyBody
             while (!sc.nextLine().equals("0")) ;
             System.out.println("Ending");
             sm.cleanUp();
@@ -198,11 +189,11 @@ public class SoundMenager {
     }
 
     public void closeRequest() {
-        if(!sock.isClosed()){
+        if (!sock.isClosed()) {
             byte buffer[] = new byte[BUFF_SIZE];
-            buffer[0]=0;
+            buffer[0] = 0;
             try {
-                out.write(buffer,0,BUFF_SIZE);
+                out.write(buffer, 0, BUFF_SIZE);
                 sock.close();
             } catch (IOException e) {
                 e.printStackTrace();

@@ -10,32 +10,35 @@
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.RowConstraints?>
 
-<BorderPane prefHeight="306.0" prefWidth="306.0" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="wjaronski.controller.MainWindowController">
+<BorderPane prefHeight="306.0" prefWidth="306.0" xmlns="http://javafx.com/javafx/8.0.121" xmlns:fx="http://javafx.com/fxml/1" fx:controller="wjaronski.controller.MainWindowController">
    <center>
-      <GridPane alignment="CENTER" layoutY="100.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="204.0" prefWidth="286.0" BorderPane.alignment="CENTER">
-        <columnConstraints>
-          <ColumnConstraints halignment="CENTER" hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-          <ColumnConstraints halignment="CENTER" hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-        </columnConstraints>
-        <rowConstraints>
-          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-        </rowConstraints>
-         <children>
-            <Label text="Głośniki" />
-            <Label text="Mikrofon" GridPane.rowIndex="1" />
-            <ToggleButton fx:id="speakerToggleButton" mnemonicParsing="false" onAction="#speakerMute" text="Wycisz" GridPane.columnIndex="1" />
-            <ToggleButton fx:id="micToggleButton" mnemonicParsing="false" onAction="#micMute" text="Wycisz" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-            <Button fx:id="settingsButton" disable="true" mnemonicParsing="false" onAction="#settings" text="Ustawienia" GridPane.rowIndex="2" />
-            <Button fx:id="logOutButton" mnemonicParsing="false" onAction="#logout" text="Wyloguj" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-         </children>
-      </GridPane>
+       <GridPane alignment="CENTER" layoutY="100.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity"
+                 minWidth="-Infinity" prefHeight="204.0" prefWidth="286.0" BorderPane.alignment="CENTER">
+           <columnConstraints>
+               <ColumnConstraints halignment="CENTER" hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0"/>
+               <ColumnConstraints halignment="CENTER" hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0"/>
+           </columnConstraints>
+           <rowConstraints>
+               <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+               <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+               <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES"/>
+           </rowConstraints>
+           <Label text="Głośniki"/>
+           <Label text="Mikrofon" GridPane.rowIndex="1"/>
+           <ToggleButton fx:id="speakerToggleButton" mnemonicParsing="false" onAction="#speakerMute" text="Wycisz"
+                         GridPane.columnIndex="1"/>
+           <ToggleButton fx:id="micToggleButton" mnemonicParsing="false" onAction="#micMute" text="Wycisz"
+                         GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+           <Button fx:id="settingsButton" disable="true" mnemonicParsing="false" onAction="#settings" text="Ustawienia"
+                   GridPane.rowIndex="2"/>
+           <Button fx:id="logOutButton" mnemonicParsing="false" onAction="#logout" text="Wyloguj"
+                   GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+       </GridPane>
    </center>
    <padding>
       <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
    </padding>
    <bottom>
-      <ListView prefHeight="121.0" prefWidth="286.0" BorderPane.alignment="CENTER" />
+      <ListView fx:id="userListView" prefHeight="121.0" prefWidth="286.0" BorderPane.alignment="CENTER" />
    </bottom>
 </BorderPane>
