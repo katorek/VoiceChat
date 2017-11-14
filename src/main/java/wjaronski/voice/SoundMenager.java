@@ -14,7 +14,6 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.Scanner;
 
 public class SoundMenager {
     private static final Integer BUFF_SIZE = 99;
@@ -59,8 +58,8 @@ public class SoundMenager {
     private void setUpMic(Mixer mixer) {
         try {
             audioFormat = getAudioFormat();
+
             DataLine.Info dataLineInfo = new DataLine.Info(TargetDataLine.class, audioFormat);
-            System.err.println(AudioSystem.isLineSupported(dataLineInfo));
 
             targetDataLine = (TargetDataLine) mixer.getLine(dataLineInfo);
             targetDataLine.open(audioFormat);
@@ -88,7 +87,7 @@ public class SoundMenager {
         int sampleSizeInBits = 8;
         int channels = 1;
 
-        return new AudioFormat(sampleRate, sampleSizeInBits, channels, false,
+        return new AudioFormat(sampleRate, sampleSizeInBits, channels, true,
                 false);
     }
 
@@ -167,26 +166,26 @@ public class SoundMenager {
         return mixer.isLineSupported(dataLineInfo);
     }
 
-    public static void main(String[] args) {
-
-        try {
-            Socket socket = new Socket("127.0.0.1", 12345);
-            Mixer mixer = AudioSystem.getMixer(AudioSystem.getMixerInfo()[3]);
-
-            SoundMenager sm = new SoundMenager(socket, mixer);
-            sm.startRecording();
-            sm.startPlaying();
-
-            Scanner sc = new Scanner(System.in);
-
-            //noinspection StatementWithEmptyBody
-            while (!sc.nextLine().equals("0")) ;
-            System.out.println("Ending");
-            sm.cleanUp();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+//    public static void main(String[] args) {
+//
+//        try {
+//            Socket socket = new Socket("127.0.0.1", 12345);
+//            Mixer mixer = AudioSystem.getMixer(AudioSystem.getMixerInfo()[3]);
+//
+//            SoundMenager sm = new SoundMenager(socket, mixer);
+//            sm.startRecording();
+//            sm.startPlaying();
+//
+//            Scanner sc = new Scanner(System.in);
+//
+//            //noinspection StatementWithEmptyBody
+//            while (!sc.nextLine().equals("0")) ;
+//            System.out.println("Ending");
+//            sm.cleanUp();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
 
     public void closeRequest() {
         if (!sock.isClosed()) {
