@@ -22,6 +22,7 @@ public class MainWindowController implements Initializable {
     private static boolean logoutRequest = false;
     private static SoundMenager sm;
     private MainWindowController controller;
+    private SocketConnection socketConnection;
 
     public MainWindowController getController() {
         return controller;
@@ -106,13 +107,18 @@ public class MainWindowController implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         usersLogged = new ArrayList(10);
-        SocketConnection socketConnection = Main.getSocketConnection();
+        socketConnection = Main.getSocketConnection();
         sm = new SoundMenager(socketConnection.getSocket());
         sm.setController(this);
         // todo otrzymanie listy uzytkownikow
 
         sm.startPlaying();
         sm.startRecording();
+        requestLoggedUsers();
+    }
+
+    private void requestLoggedUsers() {
+        socketConnection.requestLoggedUsers();
     }
 
     public static void hide() {

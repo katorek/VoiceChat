@@ -301,9 +301,14 @@ void *ThreadBehavior(void *t_data){
     if(loggedProperly == 1){
         wyslijZalogowanychUzytkownikow();
         while((readC = read(conn_sck, bufor, 99))>0){
-            sprintf(bufor,"%s",bufor);
-    //        printf("%s\n",bufor);
-            wyslijDoPozostalych(conn_sck,bufor);
+            if(isMsgRequestForLoggedUsers(bufor)){
+
+            }
+            else{
+                sprintf(bufor,"%s",bufor);
+        //        printf("%s\n",bufor);
+                wyslijDoPozostalych(conn_sck,bufor);
+            }
         }
     }
 

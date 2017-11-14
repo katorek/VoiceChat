@@ -36,6 +36,7 @@ public class SoundMenager {
     private MainWindowController controller;
 
     private SoundMenager(Socket socket, Mixer mixer) {
+        //        Arrays.stream(getMixers()).forEach(e-> System.out.println(e));
         setUpSocket(socket);
         setUpMic(mixer);
         setUpOutput();
@@ -43,6 +44,8 @@ public class SoundMenager {
 
     public SoundMenager(Socket socket) {
         this(socket, AudioSystem.getMixer(AudioSystem.getMixerInfo()[3]));
+        //standardowe wejscie mikrofonowe, w razie czego odkomentowac linie 39 i sprawdzic ktory mixer odpowiedizalny za przechwytywanie dzwieku
+        System.out.println("Using:" + AudioSystem.getMixer(AudioSystem.getMixerInfo()[3]));
     }
 
     private void setUpSocket(Socket socket) {
