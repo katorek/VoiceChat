@@ -59,8 +59,8 @@ public class SoundMenager {
     private void setUpMic(Mixer mixer) {
         try {
             audioFormat = getAudioFormat();
-
             DataLine.Info dataLineInfo = new DataLine.Info(TargetDataLine.class, audioFormat);
+            System.err.println(AudioSystem.isLineSupported(dataLineInfo));
 
             targetDataLine = (TargetDataLine) mixer.getLine(dataLineInfo);
             targetDataLine.open(audioFormat);
@@ -88,7 +88,7 @@ public class SoundMenager {
         int sampleSizeInBits = 8;
         int channels = 1;
 
-        return new AudioFormat(sampleRate, sampleSizeInBits, channels, true,
+        return new AudioFormat(sampleRate, sampleSizeInBits, channels, false,
                 false);
     }
 
