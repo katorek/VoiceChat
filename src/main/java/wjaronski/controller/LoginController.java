@@ -205,9 +205,8 @@ public class LoginController implements Initializable {
             String[] arr = br.readLine().split(FILE_SEPARATOR);
             ipTextField.setText(ip = arr[0]);
             portTextField.setText(port = arr[1]);
-            usernameTextField.setText(username = arr[2]);
-            passwordField.setText(password = arr[3]);
-
+            usernameTextField.setText(username = (arr[2] == null) ? "" : arr[2]);
+            passwordField.setText(password = (arr[3] == null) ? "" : arr[3]);
         } catch (Exception e) {
             usernameTextField.setText(username = "");
             passwordField.setText(password = "");

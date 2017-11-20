@@ -4,7 +4,10 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ToggleButton;
@@ -13,8 +16,15 @@ import wjaronski.Main;
 import wjaronski.socket.SocketConnection;
 import wjaronski.voice.SoundMenager;
 
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Mixer;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.ResourceBundle;
 
 public class MainWindowController implements Initializable {
@@ -22,6 +32,7 @@ public class MainWindowController implements Initializable {
     private static boolean logoutRequest = false;
     private static SoundMenager sm;
     private MainWindowController controller;
+    private static Mixer mixer;
 
     public MainWindowController getController() {
         return controller;
@@ -54,10 +65,48 @@ public class MainWindowController implements Initializable {
         hide();
     }
 
-    @SuppressWarnings("unused")
     @FXML
     void settings(ActionEvent event) {
+        loadSettingsWindow();
+        sm.changeMic(mixer);
+    }
+
+    private void loadSettingsWindow() {
         //todo
+        mixer = AudioSystem.getMixer(AudioSystem.getMixerInfo()[3]);
+        Parent root;
+        try {
+            root = FXMLLoader.load(getClass().getResource("/settingsWindow.fxml"));
+            Stage stage = new Stage();
+            stage.setTitle("Ustawienia dzwieku");
+            stage.setScene(new Scene(root));
+//            stage.initModality(Modality.WINDOW_MODAL);
+//            stage.initOwner(logOutButton.getScene().getWindow());
+            stage.showAndWait();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadSettings(File file) {
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String m = br.readLine();
+            System.err.println(m);
+            Arrays.stream(SoundMenager.getMixers())
+                    .filter(SoundMenager::isLineSupported)
+                    .forEach(e -> {
+                        System.err.println(e.toString());
+                        mixer = (e.toString().equals(m)) ?
+                                SoundMenager.getMixer(e) : mixer;
+                    });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println(mixer.toString());
+    }
+
+    public static void setMixer(Mixer mixer) {
+        MainWindowController.mixer = mixer;
     }
 
     @FXML
@@ -78,7 +127,7 @@ public class MainWindowController implements Initializable {
         usersLogged.add(user);
     }
 
-    private void updateListView(){
+    private void updateListView() {
         Platform.runLater(() -> userListView.setItems(FXCollections.observableArrayList(usersLogged)));
     }
 
@@ -105,14 +154,21 @@ public class MainWindowController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        mixer = null;
+        initSettings();
         usersLogged = new ArrayList(10);
         SocketConnection socketConnection = Main.getSocketConnection();
-        sm = new SoundMenager(socketConnection.getSocket());
-        sm.setController(this);
-        // todo otrzymanie listy uzytkownikow
 
+        sm = new SoundMenager(socketConnection.getSocket(), mixer);
+        sm.setController(this);
         sm.startPlaying();
         sm.startRecording();
+    }
+
+    private void initSettings() {
+        File defaultSettings = new File(".soundSettings");
+        if (defaultSettings.exists()) loadSettings(defaultSettings);
+        else loadSettingsWindow();
     }
 
     public static void hide() {

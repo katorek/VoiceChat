@@ -29,7 +29,7 @@
                          GridPane.columnIndex="1"/>
            <ToggleButton fx:id="micToggleButton" mnemonicParsing="false" onAction="#micMute" text="Wycisz"
                          GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-           <Button fx:id="settingsButton" disable="true" mnemonicParsing="false" onAction="#settings" text="Ustawienia"
+           <Button fx:id="settingsButton" mnemonicParsing="false" onAction="#settings" text="Ustawienia"
                    GridPane.rowIndex="2"/>
            <Button fx:id="logOutButton" mnemonicParsing="false" onAction="#logout" text="Wyloguj"
                    GridPane.columnIndex="1" GridPane.rowIndex="2"/>
