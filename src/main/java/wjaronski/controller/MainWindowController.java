@@ -72,7 +72,6 @@ public class MainWindowController implements Initializable {
     }
 
     private void loadSettingsWindow() {
-        //todo
         mixer = AudioSystem.getMixer(AudioSystem.getMixerInfo()[3]);
         Parent root;
         try {
@@ -80,8 +79,6 @@ public class MainWindowController implements Initializable {
             Stage stage = new Stage();
             stage.setTitle("Ustawienia dzwieku");
             stage.setScene(new Scene(root));
-//            stage.initModality(Modality.WINDOW_MODAL);
-//            stage.initOwner(logOutButton.getScene().getWindow());
             stage.showAndWait();
         } catch (IOException e) {
             e.printStackTrace();

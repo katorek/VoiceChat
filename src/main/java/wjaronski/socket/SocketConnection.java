@@ -65,4 +65,8 @@ public class SocketConnection {
     public Socket getSocket() {
         return cSocket;
     }
+
+    public void requestLoggedUsers(){
+        wyslij("6");
+    }
 }
