@@ -17,10 +17,10 @@ import java.net.SocketException;
 
 public class SoundMenager {
     private static final Integer BUFF_SIZE = 99;
+    private static AudioFormat audioFormat;
 
     private boolean isRecording = false;
     private boolean isPlaying = false;
-    private AudioFormat audioFormat;
     private TargetDataLine targetDataLine;
     private BufferedOutputStream out = null;
     private BufferedInputStream in = null;
@@ -35,8 +35,7 @@ public class SoundMenager {
 
     private MainWindowController controller;
 
-    private SoundMenager(Socket socket, Mixer mixer) {
-        //        Arrays.stream(getMixers()).forEach(e-> System.out.println(e));
+    public SoundMenager(Socket socket, Mixer mixer) {
         setUpSocket(socket);
         setUpMic(mixer);
         setUpOutput();
@@ -44,8 +43,6 @@ public class SoundMenager {
 
     public SoundMenager(Socket socket) {
         this(socket, AudioSystem.getMixer(AudioSystem.getMixerInfo()[3]));
-        //standardowe wejscie mikrofonowe, w razie czego odkomentowac linie 39 i sprawdzic ktory mixer odpowiedizalny za przechwytywanie dzwieku
-        System.out.println("Using:" + AudioSystem.getMixer(AudioSystem.getMixerInfo()[3]));
     }
 
     private void setUpSocket(Socket socket) {
@@ -85,7 +82,7 @@ public class SoundMenager {
 
     }
 
-    private AudioFormat getAudioFormat() {
+    private static AudioFormat getAudioFormat() {
         float sampleRate = 8000.0F;
         int sampleSizeInBits = 8;
         int channels = 1;
@@ -153,8 +150,7 @@ public class SoundMenager {
      *
      * @return list of Mixers
      */
-    @SuppressWarnings("unused")
-    public Mixer.Info[] getMixers() {
+    public static Mixer.Info[] getMixers() {
         audioFormat = getAudioFormat();
         DataLine.Info dataLineInfo = new DataLine.Info(
                 TargetDataLine.class, audioFormat);
@@ -163,7 +159,7 @@ public class SoundMenager {
     }
 
     @SuppressWarnings("unused")
-    public boolean isLineSupported(Mixer mixer) {
+    public static boolean isLineSupported(Mixer mixer) {
         DataLine.Info dataLineInfo = new DataLine.Info(
                 TargetDataLine.class, audioFormat);
         return mixer.isLineSupported(dataLineInfo);
@@ -211,5 +207,20 @@ public class SoundMenager {
     public void setMicMuted(boolean micMuted) {
         System.err.println(micMuted ? "Mic muted" : "Mic unmuted");
         this.micMuted = micMuted;
+    }
+
+    public static boolean isLineSupported(Mixer.Info e) {
+        return isLineSupported(AudioSystem.getMixer(e));
+    }
+
+    public static Mixer getMixer(Mixer.Info selectedItem) {
+        return AudioSystem.getMixer(selectedItem);
+    }
+
+    public void changeMic(Mixer mic){
+        isRecording = false;
+        targetDataLine.close();
+        setUpMic(mic);
+        startRecording();
     }
 }

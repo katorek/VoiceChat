@@ -1,1 +1,1 @@
-wojtek;12345;guest;123;kator;1234;wojtasek;1234566;Wojciech;Jaro;wojte;1234;
+wojtek;12345;guest;;
