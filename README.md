@@ -1,7 +1,9 @@
-# VoiceChat
+# VoiceChat Communicator
 ## Description
-Voice communicator using socekts for Computer Networks project at [Poznań University of Technology](http://fc.put.poznan.pl/index.php)  
-Client written in Java, server in ANSI C
+Voice communicator using sockets for Computer Networks project at [Poznań University of Technology](http://fc.put.poznan.pl/index.php)  
+Client written in Java, server in ANSI C.  
+Client sends data from microphone, sends to server which send data to others connected clients.  
+Server reads users from /src/main/c/server/users.txt and adds them to userlist. Default 10 is max users count. 5 max connections. To change limits edit MAX_CONNECTIONS and MAX_USERS const variables.  
 
 
 ## Requirements for client
@@ -15,11 +17,12 @@ Client written in Java, server in ANSI C
 **Warning Java 9 may not run, because of some problems with JavaFX libraries**
 
 ## How to run client
-clone repository  
-mvn clean package  
-mvn exec:java
+1. clone repository  
+2. mvn clean package  
+3. mvn exec:java
 
 ## How to run server
-cd /src/main/c/server/  
-make  
-./server
+1. cd /src/main/c/server/  
+2. make  
+3. ./server
+**Note. To add more users from the beggining, edit users.txt in format username;password;username2;password2;... and so on.**
