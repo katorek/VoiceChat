@@ -24,5 +24,6 @@ Server reads users from /src/main/c/server/users.txt and adds them to userlist. 
 ## How to run server
 1. cd /src/main/c/server/  
 2. make  
-3. ./server
+3. ./server  
+
 **Note. To add more users from the beggining, edit users.txt in format username;password;username2;password2;... and so on.**
