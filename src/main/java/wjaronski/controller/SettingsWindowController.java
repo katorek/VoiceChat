@@ -10,9 +10,11 @@ import wjaronski.voice.SoundMenager;
 import javax.sound.sampled.Mixer;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -36,7 +38,7 @@ public class SettingsWindowController implements Initializable {
         File file = new File(".soundSettings");
         if(file.exists() && file.delete()) System.out.println("Nie udalo sie zapisac do pliku ustawien dzwieku");
         else {
-            try(BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
+            try(BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
                 System.out.println(selectedMixerInfo.toString());
                 bw.write(selectedMixerInfo.toString());
             } catch (IOException e) {
