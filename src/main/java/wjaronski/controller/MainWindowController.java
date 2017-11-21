@@ -162,6 +162,7 @@ public class MainWindowController implements Initializable {
         sm.setController(this);
         sm.startPlaying();
         sm.startRecording();
+        socketConnection.requestLoggedUsers();
     }
 
     private void initSettings() {

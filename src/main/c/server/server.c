@@ -227,6 +227,11 @@ void printIP(){
      printf(COLOR_YELLOW COLOR_UNDERLINE"IP:PORT\n"COLOR_RESET COLOR_GREEN"%s:%d\n"COLOR_RESET, inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr),SERVER_PORT);
 }
 
+int isMsgRequestForLoggedUsers(char buf[]){
+    if(buf[0]=='6') return 1;
+    return 0;
+}
+
 void *ThreadBehavior(void *t_data){
     pthread_detach(pthread_self());
     struct thread_data_t *th_data = (struct thread_data_t*)t_data;
@@ -301,8 +306,8 @@ void *ThreadBehavior(void *t_data){
     if(loggedProperly == 1){
         wyslijZalogowanychUzytkownikow();
         while((readC = read(conn_sck, bufor, 99))>0){
-            if(isMsgRequestForLoggedUsers(bufor)){
-
+            if(isMsgRequestForLoggedUsers(bufor)==1){
+                wyslijZalogowanychUzytkownikow();
             }
             else{
                 sprintf(bufor,"%s",bufor);
