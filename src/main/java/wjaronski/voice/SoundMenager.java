@@ -165,27 +165,6 @@ public class SoundMenager {
         return mixer.isLineSupported(dataLineInfo);
     }
 
-//    public static void main(String[] args) {
-//
-//        try {
-//            Socket socket = new Socket("127.0.0.1", 12345);
-//            Mixer mixer = AudioSystem.getMixer(AudioSystem.getMixerInfo()[3]);
-//
-//            SoundMenager sm = new SoundMenager(socket, mixer);
-//            sm.startRecording();
-//            sm.startPlaying();
-//
-//            Scanner sc = new Scanner(System.in);
-//
-//            //noinspection StatementWithEmptyBody
-//            while (!sc.nextLine().equals("0")) ;
-//            System.out.println("Ending");
-//            sm.cleanUp();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
-
     public void closeRequest() {
         if (!sock.isClosed()) {
             byte buffer[] = new byte[BUFF_SIZE];
